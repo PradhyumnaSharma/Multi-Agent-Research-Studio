@@ -28,11 +28,10 @@ Thumbs.db
 .streamlit/
 
 # Exports
-exports/
-*.md
+# reports/
 *.pdf
-*.html
-*.json
+report_*.html
+report_*.json
 
 # Logs
 *.log
