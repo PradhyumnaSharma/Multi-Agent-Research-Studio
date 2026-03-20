@@ -1,5 +1,5 @@
 """
-LangGraph workflow for Multi-Agent Research Studio
+LangGraph workflow for Multi-Agent Research Studio - The Orchestrator of Research and Writing
 """
 from typing import Literal
 from langgraph.graph import StateGraph, END

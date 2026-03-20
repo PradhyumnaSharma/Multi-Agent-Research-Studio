@@ -76,20 +76,7 @@ def get_research_timeline(state: Dict[str, Any]) -> List[Dict[str, Any]]:
     return timeline
 
 
-def get_quality_breakdown(state: Dict[str, Any]) -> Dict[str, float]:
-    """Break down quality score into components"""
-    sources = state.get("sources", [])
-    notes = state.get("research_notes", [])
-    citations = state.get("citations", [])
-    
-    breakdown = {
-        "Source Count": min(len(sources) / 5, 0.4),
-        "Note Completeness": min(len(notes) / 5, 0.3),
-        "Outline Quality": 0.2 if state.get("outline") else 0.0,
-        "Citation Count": min(len(citations) / 5, 0.1)
-    }
-    
-    return breakdown
+
 
 
 def prepare_analytics_dataframe(state: Dict[str, Any]) -> pd.DataFrame:

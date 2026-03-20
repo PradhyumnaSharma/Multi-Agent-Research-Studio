@@ -101,18 +101,4 @@ def add_agent_action(state: ResearchState, agent_name: str, action: str, details
     return state
 
 
-def calculate_quality_score(state: ResearchState) -> float:
-    """Calculate overall quality score based on various factors"""
-    sources = state.get("sources", [])
-    notes = state.get("research_notes", [])
-    citations = state.get("citations", [])
 
-    factors = {
-        "source_count": min(len(sources) / 5, 0.4),
-        "note_completeness": min(len(notes) / 5, 0.3),
-        "outline_quality": 0.2 if state.get("outline") else 0.0,
-        "citation_count": min(len(citations) / 5, 0.1)
-    }
-
-    score = sum(factors.values())
-    return min(score, 1.0)

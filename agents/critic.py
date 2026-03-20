@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage
 from datetime import datetime
 import re
 import config
-from utils.state import ResearchState, add_agent_action, calculate_quality_score
+from utils.state import ResearchState, add_agent_action
 
 
 class CriticAgent:
@@ -60,17 +60,9 @@ class CriticAgent:
 
         state["status"] = "reviewing"
         state = add_agent_action(
-            state, "Critic", "Starting evaluation", {"iteration": iteration}
+            state, "Critic", "Starting LLM logic evaluation", {"iteration": iteration}
         )
 
-        # Quality metrics
-        print(f"[Critic] Calculating quality score for {len(research_notes)} notes and {len(sources)} sources...")
-        quality_score = calculate_quality_score(state)
-        state["quality_score"] = quality_score
-
-        has_min_sources = len(sources) >= config.MIN_SOURCES_REQUIRED
-        has_min_notes = len(research_notes) >= 3
-        has_min_quality = quality_score >= config.MIN_QUALITY_SCORE
         max_iter_reached = iteration >= config.MAX_RESEARCH_ITERATIONS
 
         # ---- Build evaluation prompt ----
@@ -79,33 +71,42 @@ class CriticAgent:
             for i, n in enumerate(research_notes)
         )
         evaluation_prompt = (
-            f"You are a research quality critic. Evaluate this research on: \"{topic}\"\n\n"
+            f"You are an expert research quality critic. Evaluate this research on: \"{topic}\"\n\n"
             f"Research Notes ({len(research_notes)} notes):\n{notes_block}\n\n"
             f"Sources Found: {len(sources)}\n"
-            f"Quality Score: {quality_score:.2f}\n"
             f"Iteration: {iteration}\n"
             f"Previous Feedback: {previous_feedback or 'None'}\n\n"
+            f"Your task is to determine if this research is comprehensive, accurate, and ready to be compiled into a final report. Use your own intelligence to assess completeness.\n"
+            f"You MUST provide a QUALITY SCORE from 0.0 to 1.0 (where 1.0 is perfect coverage).\n\n"
             f"Reply with EXACTLY this format:\n\n"
+            f"SCORE: <float between 0.0 and 1.0>\n"
             f"STATUS: SUFFICIENT   (or STATUS: INSUFFICIENT)\n\n"
             f"If INSUFFICIENT:\n"
-            f"FEEDBACK:\n<specific feedback>\n\n"
+            f"FEEDBACK:\n<specific actionable feedback on what to research next>\n\n"
             f"If SUFFICIENT:\n"
             f"OUTLINE:\n<detailed hierarchical outline for a report>"
         )
 
         try:
-            print("[Critic] Calling LLM to evaluate research quality...")
+            print("[Critic] Calling LLM to evaluate research quality intrinsically...")
             resp = self.llm.invoke([HumanMessage(content=evaluation_prompt)])
             eval_text = resp.content if hasattr(resp, "content") else str(resp)
 
             parsed_status = self._parse_status(eval_text)
-            print(f"[Critic] Evaluated status: {parsed_status}")
+            
+            # Extract SCORE
+            quality_score = 0.5
+            score_match = re.search(r"SCORE\s*:\s*([0-9]*\.?[0-9]+)", eval_text.upper())
+            if score_match:
+                try:
+                    quality_score = float(score_match.group(1))
+                except ValueError:
+                    pass
+            state["quality_score"] = quality_score
+            print(f"[Critic] Evaluated status: {parsed_status} with LLM Score: {quality_score}")
 
-            # Determine final decision using parsed status + hard metrics
-            is_sufficient = (
-                parsed_status == "SUFFICIENT"
-                or (has_min_sources and has_min_notes and (has_min_quality or max_iter_reached))
-            )
+            # Pure LLM reliance (fallback only if max iterations hit)
+            is_sufficient = (parsed_status == "SUFFICIENT" or max_iter_reached)
 
             if is_sufficient:
                 print(f"[Critic] Research is SUFFICIENT. Generating outline...")

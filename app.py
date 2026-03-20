@@ -15,7 +15,6 @@ from utils.state import create_initial_state, ResearchStatus
 from utils.analytics import (
     calculate_research_metrics,
     get_research_timeline,
-    get_quality_breakdown,
     prepare_analytics_dataframe,
 )
 from utils.exporters import export_report
@@ -163,12 +162,23 @@ def _display_sources(state: Dict[str, Any]):
 def _display_analytics(state: Dict[str, Any]):
     st.subheader("📊 Research Analytics")
     m = calculate_research_metrics(state)
-    qb = get_quality_breakdown(state)
 
-    if qb:
-        fig = px.pie(values=list(qb.values()), names=list(qb.keys()),
-                     title="Quality Score Breakdown")
-        st.plotly_chart(fig, use_container_width=True)
+    score = state.get('quality_score', 0.0)
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = score * 100,
+        title = {'text': "LLM Agent Confidence"},
+        gauge = {
+            'axis': {'range': [0, 100], 'tickwidth': 1},
+            'bar': {'color': "#1f77b4"},
+            'steps': [
+                {'range': [0, 50], 'color': "#f8d7da"},
+                {'range': [50, 80], 'color': "#fff3cd"},
+                {'range': [80, 100], 'color': "#d4edda"}
+            ]
+        }
+    ))
+    st.plotly_chart(fig, use_container_width=True)
 
     tl = get_research_timeline(state)
     if tl:
@@ -371,7 +381,7 @@ def main():
             "LLM Model",
             [
                 "llama-3.3-70b-versatile",
-                "gpt-oss-20b",
+                "openai/gpt-oss-20b",
                 "meta-llama/llama-4-scout-17b-16e-instruct"
             ],
             index=0,
@@ -437,7 +447,7 @@ def main():
                                      use_container_width=True):
                             approve_and_continue()
                     with a2:
-                        if st.button("❌ I don't like this outline, Give me a new one", use_container_width=True):
+                        if st.button("❌I don't like this outline, Give me a new one", use_container_width=True):
                             reject_and_refine()
                 else:
                     st.warning("No outline generated yet.")

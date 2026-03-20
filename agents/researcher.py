@@ -81,7 +81,9 @@ class ResearcherAgent:
                 if "bing.com/aclick" in link or not link.strip():
                     continue
                 
-                if not snippet.strip():
+                # Exclude any snippet that looks like an API/connection error
+                err_lower = snippet.lower()
+                if not snippet.strip() or "connecterror:" in err_lower or "error sending request" in err_lower:
                     continue
 
                 source = Source(
@@ -93,15 +95,8 @@ class ResearcherAgent:
                 sources.append(source)
                 
         except Exception as e:
-            # Graceful fallback – never crash
-            sources.append(
-                Source(
-                    title=f"Research on: {query}",
-                    url="",
-                    snippet=f"Search attempted for: {query} (error: {e})",
-                    retrieved_at=datetime.now().isoformat(),
-                )
-            )
+            print(f"[Researcher] Search error for query '{query}': {e}")
+            # We no longer append the error as a fake source to prevent confusing the Critic.
         return sources
 
     # ------------------------------------------------------------------

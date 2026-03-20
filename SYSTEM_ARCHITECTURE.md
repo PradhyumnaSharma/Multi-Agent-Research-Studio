@@ -68,37 +68,24 @@ stateDiagram-v2
 
 ---
 
-## 3. The Math & Logic Explained
+## 3. Intelligence & Logic Explained
 
-How does the `Critic` agent decide if the research is "good enough"? 
+How does the system decide if the research is "good enough", and how does it avoid crashing?
 
-### A. The Quality Score Formula (`utils/state.py`)
-Every time the Critic evaluates the data, it calculates a mathematical `quality_score` with a maximum value of `1.0`.
+### A. Pure LLM-Reasoning & Scoring (`agents/critic.py`)
+The system no longer uses hard-coded math or arbitrary source-counting constraints. Instead, the `Critic` agent relies **entirely on the LLM's intrinsic intelligence**.
 
-```python
-    factors = {
-        "source_count": min(len(sources) / 5, 0.4),      # Max 0.4 for finding 2 or more sources
-        "note_completeness": min(len(notes) / 5, 0.3),   # Max 0.3 for extracting 1.5+ notes
-        "outline_quality": 0.2 if state.get("outline") else 0.0, # 0.2 if an outline exists
-        "citation_count": min(len(citations) / 5, 0.1)   # Max 0.1 for citations
-    }
-    score = sum(factors.values())
-    return min(score, 1.0)
-```
-* **Why this matters**: This score prevents the LLM from entering infinite loops. If the web search fails repeatedly, the score remains low.
-
-### B. The Critic's Routing Decision (`agents/critic.py`)
-Once the score is calculated, the `Critic` executes strict logic to decide the next step:
-
-1. **LLM Evaluation**: The LLM reads the notes and is prompted to reply with exactly `STATUS: SUFFICIENT` or `STATUS: INSUFFICIENT`.
-2. **Hard Fallback Metrics**: The code does NOT solely trust the LLM. It forces progress if:
-   * Total sources >= `MIN_SOURCES_REQUIRED` (3) **AND**
-   * Total notes >= 3 **AND**
-   * `quality_score` >= `MIN_QUALITY_SCORE` (0.7) **OR** `iteration` >= `MAX_RESEARCH_ITERATIONS` (5)
+1. **Evaluation**: The LLM reviews all generated notes, retrieved sources, and previous feedback. It must generate a customized `SCORE` between 0.0 and 1.0 and a `STATUS` of either `SUFFICIENT` or `INSUFFICIENT`.
+2. **Parsing**: Code extracts the LLM's textual response using strict regex (`r"SCORE\s*:\s*([0-9]*\.?[0-9]+)"`).
+3. **True Agentic Routing**: The workflow does *not* force progress unless the maximum safety iterations (`MAX_RESEARCH_ITERATIONS`) are hit. The flow goes to human approval *only* if the LLM fundamentally agrees the criteria is fulfilled (`SUFFICIENT`).
 
 **Routing Output:**
 * If `SUFFICIENT` -> The LLM writes an outline, the graph pauses for the user.
-* If `INSUFFICIENT` -> The LLM generates "actionable feedback" detailing what is missing. The graph loops instantly back to the `Researcher`, who uses that exact feedback to generate brand new DuckDuckGo queries.
+* If `INSUFFICIENT` -> The LLM generates "actionable feedback" detailing what semantic gaps are missing. The graph loops instantly back to the `Researcher`, who uses that exact feedback to generate brand new DuckDuckGo queries.
+
+### B. Clean Data Validation (`agents/researcher.py`)
+Search APIs (like Wikipedia/DuckDuckGo) frequently fail quietly due to rate limits or IP bans, returning HTTP connection errors disguised as success objects. 
+To ensure the Critic LLM is not "poisoned" by garbage data, the Researcher proactively scans the returned content strings and **destroys** any snippet that contains words like `ConnectError:` or `error sending request`. This prevents the AI from falling into hallucination loops over failed fetch logs.
 
 ---
 
