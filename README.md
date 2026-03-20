@@ -1,258 +1,109 @@
 # 🔬 Multi-Agent Research Studio
 
-A comprehensive, production-ready Python application for autonomous multi-agent research using LangGraph, Groq API, and Streamlit.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-0.2.0-red.svg)](https://github.com/langchain-ai/langgraph)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-FF4B4B.svg)](https://streamlit.io/)
+[![Groq](https://img.shields.io/badge/Groq-Inference-orange.svg)](https://groq.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🌟 Features
+**Multi-Agent Research Studio (MARS)** is a production-grade autonomous research system powered by **LangGraph** and **Groq**. It orchestrates multiple AI agents—Researcher, Critic, and Writer—to conduct deep web research, evaluate information quality, and generate comprehensive reports with human-in-the-loop validation.
 
-### Core Capabilities
-- **Multi-Agent Workflow**: Researcher, Critic, and Writer agents working collaboratively
-- **Intelligent Research**: Automated web research using DuckDuckGo
-- **Quality Evaluation**: AI-powered research quality assessment and refinement
-- **Human-in-the-Loop**: Interactive approval workflow for research outlines
-- **State Persistence**: Checkpointing with MemorySaver for session continuity
+---
 
-### Advanced Features
-- **Real-time Analytics Dashboard**: Quality scores, source distribution, agent activity
-- **Research Timeline**: Chronological view of research activities
-- **Source Management**: Credibility scoring and source validation
-- **Multiple Export Formats**: Markdown, HTML, JSON, and PDF
-- **Research Templates**: Academic, Business, Technical, and Custom templates
-- **Session Management**: Persistent research sessions with thread IDs
-- **Interactive UI**: Beautiful Streamlit interface with real-time updates
+## 🌟 Key Features
 
-## 🚀 Quick Start
+- **🤖 Multi-Agent Orchestration**: Seamless collaboration between Specialized Agents.
+- **🔍 Deep Web Research**: Automated, parallelized searches via DuckDuckGo and Wikipedia.
+- **🛡️ Quality Assurance**: A Critic agent reflects on research depth and provides refinement feedback.
+- **🤝 Human-in-the-Loop**: Pause points for outline approval before final report generation.
+- **📊 Real-time Analytics**: Interactive dashboards for quality scores, source distribution, and agent activity.
+- **📝 Professional Exports**: Download reports in **Markdown, PDF, HTML, or JSON**.
+- **💾 State Persistence**: Session recovery and thread management using LangGraph's checkpointing.
 
-### Prerequisites
+---
 
-1. **Python 3.9+** installed
-2. **Groq API Key** (free tier available)
+## 🏗️ System Architecture
 
-### Step 1: Get Groq API Key
+MARS uses a directed cyclic graph (DCG) to manage the research workflow:
 
-1. Go to [https://console.groq.com](https://console.groq.com)
-2. Sign up or log in (free account)
-3. Navigate to **API Keys** section
-4. Click **Create API Key**
-5. Copy your API key
-
-### Step 2: Set Up Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-GROQ_API_KEY=your_groq_api_key_here
-DEFAULT_MODEL=llama-3.1-70b-versatile
+```mermaid
+graph TD
+    Start((Start)) --> Researcher[Researcher Agent]
+    Researcher --> Critic[Critic Agent]
+    Critic -- Insufficient Data/Feedback --> Researcher
+    Critic -- Quality Approved --> Approval{Human Approval}
+    Approval -- Refine --> Researcher
+    Approval -- Approved --> Writer[Writer Agent]
+    Writer --> End((End))
 ```
 
-**Note**: Never commit your `.env` file to version control!
+### The Agents:
+1.  **Researcher**: Generates targeted search queries and synthesizes snippets into factual notes.
+2.  **Critic**: Evaluates research notes against the topic requirements. If quality targets aren't met, it loops back with specific logic for refinement.
+3.  **Writer**: Transforms approved research notes and outlines into a polished, structured report based on selected templates (Academic, Business, Technical).
 
-### Step 3: Install Dependencies
+---
 
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Python 3.9 or higher
+- A **Groq API Key** (Get it at [console.groq.com](https://console.groq.com))
+
+### 2. Set Up Environment
+Create a `.env` file in the project root:
+```env
+GROQ_API_KEY=your_api_key_here
+DEFAULT_MODEL=llama-3.3-70b-versatile
+```
+
+### 3. Installation
 ```bash
-# Create virtual environment (recommended)
+# Clone the repository
+git clone https://github.com/PradhyumnaSharma/Multi-Agent-Research-Studio.git
+cd Multi-Agent-Research-Studio
+
+# Create a virtual environment
 python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# Install requirements
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Step 4: Run the Application
-
+### 4. Run the Studio
 ```bash
 streamlit run app.py
 ```
 
-The application will open in your default browser at `http://localhost:8501`
+---
 
-## 📁 Project Structure
+## ⚙️ Project Structure
 
-```
-Langraph_project/
-├── app.py                 # Main Streamlit application
-├── config.py              # Configuration settings
-├── requirements.txt       # Python dependencies
-├── README.md             # This file
-├── agents/
-│   ├── __init__.py
-│   ├── researcher.py     # Research agent
-│   ├── critic.py         # Quality evaluation agent
-│   └── writer.py         # Report generation agent
-├── graph/
-│   ├── __init__.py
-│   └── research_graph.py # LangGraph workflow
-└── utils/
-    ├── __init__.py
-    ├── state.py          # State management
-    ├── analytics.py      # Analytics utilities
-    └── exporters.py      # Export utilities
-```
-
-## 🎯 Usage Guide
-
-### Starting a Research Session
-
-1. **Enter Research Topic**: Type your research topic in the input field
-2. **Configure Settings** (Sidebar):
-   - Select LLM model (llama-3.1-70b-versatile, mixtral-8x7b-32768, etc.)
-   - Choose research depth (quick, standard, comprehensive)
-   - Select report template (academic, business, technical, custom)
-3. **Start Research**: Click "🚀 Start Research"
-4. **Monitor Progress**: Watch real-time research activity in the log
-5. **Review Outline**: When research is complete, review the generated outline
-6. **Approve & Generate**: Click "Approve & Write Report" to generate final report
-7. **Export**: Export your report in various formats (Markdown, HTML, JSON, PDF)
-
-### Understanding the Workflow
-
-1. **Researcher Agent**: Conducts web searches and gathers information
-2. **Critic Agent**: Evaluates research quality
-   - If insufficient → Provides feedback → Routes back to Researcher
-   - If sufficient → Generates outline → Routes to Human Approval
-3. **Human Approval**: You review and approve the outline
-4. **Writer Agent**: Generates the final comprehensive report
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-# Groq Configuration
-GROQ_API_KEY=your_groq_api_key_here
-DEFAULT_MODEL=llama-3.1-70b-versatile
-FALLBACK_MODEL=mixtral-8x7b-32768
-
-# LLM Parameters
-LLM_TEMPERATURE=0.7
-LLM_MAX_TOKENS=4096
-
-# Research Configuration
-MAX_RESEARCH_ITERATIONS=5
-MIN_SOURCES_REQUIRED=3
-MAX_SEARCH_RESULTS=10
-RESEARCH_DEPTH=comprehensive
-
-# Quality Thresholds
-MIN_QUALITY_SCORE=0.7
-MIN_SOURCE_CREDIBILITY=0.5
-```
-
-### Customization
-
-- **Research Templates**: Modify `RESEARCH_TEMPLATES` in `config.py`
-- **Quality Thresholds**: Adjust in `config.py` or `.env`
-- **Agent Behavior**: Customize prompts in agent files
-
-## 🔧 Troubleshooting
-
-### Groq API Key Issues
-
-```bash
-# Verify your API key is set
-echo $GROQ_API_KEY  # Linux/Mac
-echo %GROQ_API_KEY%  # Windows
-
-# Check .env file exists and contains GROQ_API_KEY
-```
-
-### API Rate Limits
-
-Groq free tier has generous limits. If you hit rate limits:
-- Wait a few minutes and retry
-- Consider upgrading to paid tier for higher limits
-- Check your usage at https://console.groq.com
-
-### Model Not Available
-
-Available Groq models:
-- `llama-3.1-70b-versatile` (recommended)
-- `llama-3.1-8b-instant` (faster)
-- `mixtral-8x7b-32768` (alternative)
-- `gemma2-9b-it` (alternative)
-
-### Import Errors
-
-```bash
-# Ensure all dependencies are installed
-pip install -r requirements.txt --upgrade
-```
-
-### PDF Export Issues
-
-PDF export requires either `weasyprint` or `reportlab`:
-
-```bash
-# Option 1: Install weasyprint (recommended)
-pip install weasyprint
-
-# Option 2: Install reportlab
-pip install reportlab
-```
-
-## 📊 Features in Detail
-
-### Analytics Dashboard
-
-- **Quality Metrics**: Real-time quality score calculation
-- **Source Analysis**: Source type distribution and credibility scores
-- **Agent Activity**: Breakdown of agent actions
-- **Timeline Visualization**: Chronological research activity
-
-### Export Options
-
-- **Markdown**: Standard markdown format
-- **HTML**: Styled HTML with embedded CSS
-- **JSON**: Complete state export for programmatic use
-- **PDF**: Professional PDF reports (requires additional package)
-
-### Research Templates
-
-- **Academic**: Structured for academic papers
-- **Business**: Professional business reports
-- **Technical**: Technical documentation style
-- **Custom**: Flexible template for any use case
-
-## 🤝 Contributing
-
-This is a production-ready template. Feel free to:
-- Add new agents
-- Enhance search capabilities
-- Improve UI/UX
-- Add new export formats
-- Integrate additional data sources
-
-## 📝 License
-
-This project uses open-source technologies. All dependencies are open-source.
-
-## 🙏 Acknowledgments
-
-- **LangGraph**: For workflow orchestration
-- **LangChain**: For LLM integration
-- **Groq**: For fast cloud-based LLM inference
-- **Streamlit**: For the beautiful UI framework
-- **DuckDuckGo**: For search capabilities
-
-## 🐛 Known Issues
-
-- PDF export requires additional packages (weasyprint or reportlab)
-- Search results parsing may vary based on DuckDuckGo response format
-- Large research topics may take longer to process
-
-## 📧 Support
-
-For issues or questions:
-1. Check the troubleshooting section
-2. Review the configuration options
-3. Ensure Ollama is running and models are available
+- `app.py`: Streamlit dashboard and UI logic.
+- `graph/research_graph.py`: LangGraph workflow definition and state management.
+- `agents/`: Core logic for Researcher, Critic, and Writer agents.
+- `utils/`: Analytics, state helpers, and export utilities.
+- `config.py`: Global configuration and template definitions.
 
 ---
 
-**Built with ❤️ using LangGraph, Ollama, and Streamlit**
+## 📊 Analytics & Reporting
+
+MARS provides deep insights into the research process:
+- **Quality Score Breakdown**: Visualizing different quality dimensions.
+- **Agent Activity Log**: Real-time tracking of which agent is doing what.
+- **Source Timeline**: Mapping when and where information was retrieved.
+
+---
+
+## 🤝 Acknowledgments
+
+Built with the best-in-class AI infrastructure:
+- **[LangGraph](https://github.com/langchain-ai/langgraph)** for stateful agent orchestration.
+- **[Groq](https://groq.com/)** for lightning-fast inference.
+- **[Streamlit](https://streamlit.io/)** for the interactive research interface.
+- **[DuckDuckGo](https://duckduckgo.com/)** & **[Wikipedia](https://wikipedia.org/)** for open-web data.
+
+---
+**Built with ❤️ by Pradhyumna Sharma**
