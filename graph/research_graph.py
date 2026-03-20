@@ -57,8 +57,15 @@ class ResearchGraph:
             }
         )
         
-        # Edge from human approval to writer
-        workflow.add_edge("human_approval", "writer")
+        # Conditional edge from human approval
+        workflow.add_conditional_edges(
+            "human_approval",
+            self._after_human_approval,
+            {
+                "write": "writer",
+                "refine": "researcher"
+            }
+        )
         
         # End after writer
         workflow.add_edge("writer", END)
@@ -99,6 +106,15 @@ class ResearchGraph:
         print("[Graph] Entering 'human_approval' node. Setting status to AWAITING_APPROVAL.")
         state["status"] = ResearchStatus.AWAITING_APPROVAL
         return state
+        
+    def _after_human_approval(self, state: ResearchState) -> Literal["write", "refine"]:
+        """Determine what to do after human review of outline."""
+        if state.get("is_approved"):
+            print("[Graph] Outline approved. Routing to 'writer'.")
+            return "write"
+        else:
+            print("[Graph] Outline rejected. Routing back to 'researcher'.")
+            return "refine"
     
     def get_graph(self):
         """Get the compiled graph application"""

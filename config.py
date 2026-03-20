@@ -17,7 +17,7 @@ except (UnicodeDecodeError, TypeError):
 # Groq Configuration
 GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
 DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "llama-3.3-70b-versatile")
-FALLBACK_MODEL: str = os.getenv("FALLBACK_MODEL", "llama-3.3-70b-versatile")
+FALLBACK_MODEL: str = os.getenv("FALLBACK_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
 
 # LLM Parameters
 LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))

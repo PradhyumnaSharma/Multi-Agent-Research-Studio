@@ -190,6 +190,28 @@ def _display_analytics(state: Dict[str, Any]):
 
 def run_research(topic: str, depth: str, template: str, model: str):
     """Kick off the research graph until the interrupt point."""
+    
+    # --- GIBBERISH TOPIC CHECK ---
+    from langchain_groq import ChatGroq
+    from langchain_core.messages import HumanMessage
+    import config as app_config
+    try:
+        llm = ChatGroq(
+            groq_api_key=app_config.GROQ_API_KEY,
+            model_name=model,
+            temperature=0.0,
+            max_tokens=10
+        )
+        prompt = f"Is the following research topic completely random gibberish (like 'asdfg' or keyboard smashing)? Reply with only 'YES' or 'NO'. Topic: '{topic}'"
+        resp = llm.invoke([HumanMessage(content=prompt)])
+        reply = (resp.content if hasattr(resp, "content") else str(resp)).strip().upper()
+        if "YES" in reply:
+            st.error("You seem sleepy...go grab a coffee ☕")
+            st.session_state.is_running = False
+            return
+    except Exception as e:
+        pass # Ignore errors and proceed if API fails here
+        
     if st.session_state.research_graph is None:
         st.session_state.research_graph = ResearchGraph(model_name=model)
 
@@ -285,6 +307,52 @@ def approve_and_continue():
         st.session_state.is_running = False
 
 
+def reject_and_refine():
+    """Resume the graph after human rejection to generate a new outline."""
+    if st.session_state.research_graph is None:
+        st.error("No research graph initialised.")
+        return
+
+    graph = st.session_state.research_graph.get_graph()
+    cfg = _graph_config()
+
+    try:
+        print("\n[App] Function reject_and_refine triggered. Resuming graph...")
+        st.session_state.is_running = True
+        st.session_state.interrupted = False
+
+        # Properly update checkpoint state with approval flag false
+        graph.update_state(cfg, {
+            "is_approved": False, 
+            "status": "researching",
+            "critic_feedback": "User rejected the outline. Please generate a new, different outline with different focus.",
+            "outline": ""
+        })
+        print("[App] State updated to rejected.")
+
+        # Resume from interrupt
+        for event in graph.stream(None, cfg, stream_mode="updates"):
+            for node_name, node_output in event.items():
+                print(f"[App] Resumed event loop received from node: '{node_name}'")
+                st.session_state.current_state = node_output
+
+        # Check if we hit an interrupt again
+        final = graph.get_state(cfg)
+        if final and final.next and "human_approval" in final.next:
+            st.session_state.current_state = final.values
+            st.session_state.interrupted = True
+        elif final and final.values:
+            st.session_state.current_state = final.values
+
+        st.session_state.is_running = False
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Error continuing research: {e}")
+        st.session_state.is_running = False
+        st.session_state.interrupted = False
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────
@@ -369,10 +437,8 @@ def main():
                                      use_container_width=True):
                             approve_and_continue()
                     with a2:
-                        if st.button("❌ Reject & Refine", use_container_width=True):
-                            st.session_state.interrupted = False
-                            st.session_state.is_running = False
-                            st.rerun()
+                        if st.button("❌ I don't like this outline, Give me a new one", use_container_width=True):
+                            reject_and_refine()
                 else:
                     st.warning("No outline generated yet.")
 
