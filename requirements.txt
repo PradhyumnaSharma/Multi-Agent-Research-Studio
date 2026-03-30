@@ -11,14 +11,12 @@ plotly>=5.18.0
 pandas>=2.1.0
 
 # Search and External Tools
-duckduckgo-search>=5.0.0
-wikipedia>=1.4.0
+duckduckgo-search==6.2.11
+ddgs
 
 # Environment and Utils
 python-dotenv>=1.0.0
 markdown>=3.5.0
 
 # Export Support
-# Install these if you need PDF export functionality
-weasyprint>=61.0  # Recommended for PDF export
-# reportlab>=4.0.0 # Alternative PDF library
+weasyprint>=61.0
