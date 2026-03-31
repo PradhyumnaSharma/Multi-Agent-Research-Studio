@@ -12,6 +12,7 @@ pandas>=2.1.0
 
 # Search and External Tools
 duckduckgo-search>=5.0.0
+ddgs
 wikipedia>=1.4.0
 
 # Environment and Utils
