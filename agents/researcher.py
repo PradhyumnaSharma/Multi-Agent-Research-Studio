@@ -133,6 +133,7 @@ class ResearcherAgent:
         topic = state["topic"]
         previous_feedback = state.get("critic_feedback", "")
         iteration = state.get("research_iteration", 0)
+        research_depth = state.get("research_depth", "standard").lower()
 
         state["status"] = "researching"
         state = add_agent_action(
@@ -141,16 +142,25 @@ class ResearcherAgent:
         )
 
         # ---- Step 1: generate search queries (single LLM call) ----
-        print(f"[Researcher] Step 1: Generating search queries for topic: {topic}")
+        print(f"[Researcher] Step 1: Generating search queries for topic: {topic} at '{research_depth}' depth")
+        
+        # Configure query counts based on depth
+        query_count_instructions = {
+            "quick": "1-2 concise search queries",
+            "standard": "3-5 concise search queries",
+            "comprehensive": "5-8 concise, deep search queries covering different angles and opposing viewpoints"
+        }
+        query_instruction = query_count_instructions.get(research_depth, query_count_instructions["standard"])
+
         if previous_feedback:
             prompt = (
-                f"Based on this feedback, generate 3-5 concise search queries to "
+                f"Based on this feedback, generate {query_instruction} to "
                 f"refine research on '{topic}'.\n\nFeedback: {previous_feedback}\n\n"
                 f"Return ONLY a numbered list of queries, nothing else."
             )
         else:
             prompt = (
-                f"Generate 5 concise, specific search queries to comprehensively "
+                f"Generate {query_instruction} to comprehensively "
                 f"research: '{topic}'.\n\n"
                 f"Cover: definitions, recent developments, statistics, expert views, "
                 f"and related subtopics.\n\n"
@@ -179,9 +189,13 @@ class ResearcherAgent:
                 {"queries": queries},
             )
 
+            # Limit queries based on depth
+            max_queries = {"quick": 2, "standard": 5, "comprehensive": 8}.get(research_depth, 5)
+            queries_to_run = queries[:max_queries]
+
             # ---- Step 2: parallel DuckDuckGo searches ----
-            print(f"[Researcher] Step 2: Running parallel searches for {len(queries[:5])} queries...")
-            all_sources = self._search_parallel(queries[:5])
+            print(f"[Researcher] Step 2: Running parallel searches for {len(queries_to_run)} queries...")
+            all_sources = self._search_parallel(queries_to_run)
             print(f"[Researcher] Searches completed. Found {len(all_sources)} sources.")
             state = add_agent_action(
                 state, "Researcher", "Web searches completed",
