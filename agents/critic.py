@@ -57,13 +57,16 @@ class CriticAgent:
         sources = state.get("sources", [])
         iteration = state.get("research_iteration", 0)
         previous_feedback = state.get("critic_feedback", "")
+        research_depth = state.get("research_depth", "standard").lower()
 
         state["status"] = "reviewing"
         state = add_agent_action(
             state, "Critic", "Starting LLM logic evaluation", {"iteration": iteration}
         )
 
-        max_iter_reached = iteration >= config.MAX_RESEARCH_ITERATIONS
+        max_iter_map = {"quick": 1, "standard": 3, "comprehensive": 5}
+        depth_max_iterations = max_iter_map.get(research_depth, config.MAX_RESEARCH_ITERATIONS)
+        max_iter_reached = iteration >= depth_max_iterations
 
         # ---- Build evaluation prompt ----
         notes_block = "\n".join(
